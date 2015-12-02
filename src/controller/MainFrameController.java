@@ -211,6 +211,12 @@ public class MainFrameController implements Initializable
                             image.getHeight() + 20);
 
       }
+      else
+      {
+        graphics.strokeText(clickedRegion.name, mapCanvas.getWidth() / 5,
+                            image.getHeight() + 20);
+
+      }
     });
   }
 
