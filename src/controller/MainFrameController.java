@@ -22,6 +22,9 @@ import java.util.HashMap;
 import java.util.Random;
 import java.util.ResourceBundle;
 
+/**
+ * Controller containing the main functionality
+ */
 public class MainFrameController implements Initializable
 {
   private HashMap<Polygon, Region> regionMap = new HashMap<>();
@@ -30,6 +33,7 @@ public class MainFrameController implements Initializable
   private GraphicsContext graphics = null;
   private GraphicsContext graphicsData = null;
   private ArrayList<Card> hand = new ArrayList<>();
+  private double currentOpacity = 0.0;
 
   @FXML
   Canvas mapCanvas;
@@ -53,49 +57,9 @@ public class MainFrameController implements Initializable
     graphicsData = mapDataCanvas.getGraphicsContext2D();
     graphics.drawImage(image,0,0);
 
-    initalizeRegions();
-    startPolicyAnimation();
+    initializeRegions();
+    initListeners();
 
-
-    mapCanvas.setOnMouseClicked(event -> {
-      Region _region = getRegion(event);
-
-      if (clickedRegion == _region)
-      {
-        System.out.println(_region.name);
-        return;
-      }
-      else
-      {
-        clickedRegion = _region;
-      }
-
-      if (_region != null)
-      {
-        graphics.drawImage(_region.getImage(), 0, 0);
-        System.out.println(_region.name);
-      }
-
-
-    });
-
-
-    mapCanvas.setOnMouseMoved(event -> {
-
-      Region _region = getRegion(event);
-      if (_region != null)
-      {
-
-        graphics.clearRect(0, 0, image.getWidth(), image.getHeight() + 30);
-        graphics.drawImage(image,0,0);
-        graphics.drawImage(clickedRegion.getImage(), 0, 0);
-
-        graphics.drawImage(_region.getImage(), 0, 0);
-        graphics.strokeText(_region.name, mapCanvas.getWidth() / 5,
-                            image.getHeight() + 20);
-
-      }
-    });
 
     int c = 0;
     for (Card card : hand)
@@ -103,6 +67,7 @@ public class MainFrameController implements Initializable
       ImageView iv = new ImageView();
 
       iv.setImage(card.getImage());
+      iv.setSmooth(true);
 
       if (c > 0)
       {
@@ -110,7 +75,18 @@ public class MainFrameController implements Initializable
       }
       iv.setY(0);
 
-      iv.setOnMouseClicked(event -> System.out.println(card.toString()));
+      iv.setOnMouseClicked(event -> {
+        System.out.println(card.toString());
+      });
+      iv.setOnMouseEntered(event -> {
+        iv.setY(iv.getY() - 45);
+        iv.setRotate(-7);
+      });
+
+      iv.setOnMouseExited(event -> {
+          iv.setY(iv.getY() + 45);
+          iv.setRotate(0);
+      });
 
       handGroup.getChildren().add(iv);
       if (new Random().nextBoolean())
@@ -138,52 +114,15 @@ public class MainFrameController implements Initializable
     return _r;
   }
 
-  private void startPolicyAnimation()
-  {
-    new Thread(() -> {
-      while (!Thread.interrupted())
-      {
-        graphicsData.setStroke(new Color(255 / 255, 121 / 255, 105 / 255,
-                                         oscillator(currentOpacity)));
-        currentOpacity += .1;
-        if (currentOpacity >= Math.PI * 2)
-        {
-          currentOpacity = 0;
-        }
-        graphicsData.clearRect(0, 0,
-                               mapDataCanvas.getWidth(),
-                               mapDataCanvas.getHeight());
 
-        int i = 1;
-        for (Region region : regionMap.values())
-        {
 
-          graphicsData.strokeText(region.name + ": " + region.getDraftedCards().size(),
-                                  10, 25 * i);
-
-          i++;
-        }
-        try
-        {
-          Thread.sleep(100);
-        }
-        catch (InterruptedException e)
-        {
-          e.printStackTrace();
-        }
-      }
-    }).start();
-  }
-
-  private double currentOpacity = 0.0;
 
   private double oscillator(double opacity)
   {
     return ((Math.sin(opacity) * 1.0) + 1) / 2;
-
   }
 
-  private void initalizeRegions()
+  private void initializeRegions()
   {
 
     Polygon cal = new Polygon();
@@ -231,5 +170,71 @@ public class MainFrameController implements Initializable
 
     clickedRegion = regionMap.get(mtn);
     graphics.drawImage(clickedRegion.getImage(), 0, 0);
+  }
+
+  private void initListeners()
+  {
+    mapCanvas.setOnMouseClicked(event -> {
+      Region _region = getRegion(event);
+      if (_region == null) return;
+
+      if (clickedRegion == _region)
+      {
+        System.out.println(_region.name);
+        return;
+      }
+      else
+      {
+        clickedRegion = _region;
+      }
+      graphics.clearRect(0, 0, image.getWidth(), image.getHeight() + 30);
+      graphics.drawImage(image, 0, 0);
+      graphics.drawImage(_region.getImage(), 0, 0);
+      System.out.println(_region.name);
+
+
+    });
+
+
+    mapCanvas.setOnMouseMoved(event -> {
+
+      graphics.clearRect(0, 0, image.getWidth(), image.getHeight() + 30);
+      graphics.drawImage(image, 0, 0);
+      graphics.drawImage(clickedRegion.getImage(), 0, 0);
+
+
+      Region _region = getRegion(event);
+      if (_region != null)
+      {
+        graphics.drawImage(_region.getImage(), 0, 0);
+        graphics.strokeText(_region.name, mapCanvas.getWidth() / 5,
+                            image.getHeight() + 20);
+
+      }
+    });
+  }
+
+  public void update(float v)
+  {
+    graphicsData.setStroke(new Color(255 / 255, 121 / 255, 105 / 255,
+                                     oscillator(currentOpacity)));
+    currentOpacity += .1;
+    if (currentOpacity >= Math.PI * 2)
+    {
+      currentOpacity = 0;
+    }
+    graphicsData.clearRect(0, 0,
+                           mapDataCanvas.getWidth(),
+                           mapDataCanvas.getHeight());
+
+    int i = 1;
+    for (Region region : regionMap.values())
+    {
+
+      graphicsData.strokeText(region.name + ": " + region.getDraftedCards().size(),
+                              10, 25 * i);
+
+      i++;
+    }
   }
 }
